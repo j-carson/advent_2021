@@ -1,2 +1,1 @@
-# advent_2021
-Advent of code 2021
+Advent of Code 2021, my solutions in Python
