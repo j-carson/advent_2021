@@ -6,23 +6,18 @@ import pandas as pd
 
 
 def inputparser():
-    text = Path("input.txt").read_text()
-    lines = text.splitlines()
-    return [int(l) for l in lines]
+    return pd.read_csv("input.txt", header=None)[0]
 
 
 def part1():
-    data = pd.Series(inputparser())
-    result = (data.diff() > 0).sum()
-    return result
+    data = inputparser()
+    return (data.diff() > 0).sum()
 
 
 def part2():
-    data = pd.Series(inputparser())
+    data = inputparser()
     sums = data.rolling(3).sum()
-    diffs = sums.diff()
-    result = (sums.diff() > 0).sum()
-    return result
+    return (sums.diff() > 0).sum()
 
 
 result = part1()

@@ -3,7 +3,7 @@
 from pathlib import Path
 
 
-def inputparser():
+def getdata():
     text = Path("input.txt").read_text()
     lines = text.splitlines()
     return lines
