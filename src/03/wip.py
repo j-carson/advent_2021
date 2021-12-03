@@ -48,9 +48,12 @@ def testcase2():
 
 def solve_puzzle1(data):
     nrows = data.shape[0]
-    column_sums = [sum(i) for i in data.T]
-    is_gamma = [i > nrows / 2 for i in column_sums]
-    is_epsilon = [~i for i in is_gamma]
+    n_ones = np.array([sum(i) for i in data.T])
+    n_zeros = nrows - n_ones
+
+    is_gamma = [n_one > n_zero for n_one, n_zero in zip(n_ones, n_zeros)]
+    is_epsilon = [n_one <= n_zero for n_one, n_zero in zip(n_ones, n_zeros)]
+
     return tobinary(is_gamma) * tobinary(is_epsilon)
 
 
@@ -61,10 +64,13 @@ def solve_puzzle2(data):
     current_bit = 0
     while data.shape[0] > 1:
         nrows = data.shape[0]
-        num_bits = sum(data[:, current_bit])
-        key = 1 if num_bits >= (data.shape[0] - num_bits) else 0
+        n_ones = np.array([sum(i) for i in data.T])
+        n_zeros = nrows - n_ones
+
+        key = int(n_ones[current_bit] >= n_zeros[current_bit])
         data = np.array([row for row in data if row[current_bit] == key])
         current_bit += 1
+
     oxygen = tobinary(data[0])
 
     # carbon dioxide rule
@@ -72,10 +78,13 @@ def solve_puzzle2(data):
     current_bit = 0
     while data.shape[0] > 1:
         nrows = data.shape[0]
-        num_bits = sum(data[:, current_bit])
-        key = 0 if num_bits >= (data.shape[0] - num_bits) else 1
+        n_ones = np.array([sum(i) for i in data.T])
+        n_zeros = nrows - n_ones
+
+        key = int(n_ones[current_bit] < n_zeros[current_bit])
         data = np.array([row for row in data if row[current_bit] == key])
         current_bit += 1
+
     carbon = tobinary(data[0])
 
     return oxygen, carbon
