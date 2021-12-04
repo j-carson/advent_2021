@@ -5,9 +5,9 @@ from ycecream import y
 
 
 class Winner(Exception):
-    def __init__(self, number_called: int):
-        self.num = number_called
-        message = f"Bingo! {number_called}"
+    def __init__(self, score: int):
+        self.score = score
+        message = f"Bingo! {score}"
         super().__init__(message)
 
 
@@ -30,8 +30,11 @@ class Bingo:
         rowsums = [sum(row) for row in self.status]
         colsums = [sum(row) for row in self.status.T]
         if 5 in rowsums or 5 in colsums:
+            self.numbers[self.status == 1] = 0
+            unmarked = np.sum(self.numbers.flatten())
+            score = unmarked * number
             self.winner = True
-            raise Winner(number)
+            raise Winner(score)
 
 
 def solve1(numbers, boards):
@@ -39,10 +42,8 @@ def solve1(numbers, boards):
         for board in boards:
             try:
                 board.play(number)
-            except Winner:
-                board.numbers[board.status == 1] = 0
-                unmarked = np.sum(board.numbers.flatten())
-                return unmarked * number
+            except Winner as w:
+                return w.score
 
 
 def solve2(numbers, boards):
@@ -51,12 +52,10 @@ def solve2(numbers, boards):
         for board in boards:
             try:
                 board.play(number)
-            except Winner:
+            except Winner as w:
                 board_left -= 1
                 if board_left == 0:
-                    board.numbers[board.status == 1] = 0
-                    unmarked = np.sum(board.numbers.flatten())
-                    return unmarked * number
+                    return w.score
 
 
 def parsetext(text):
