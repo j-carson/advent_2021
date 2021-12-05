@@ -1,5 +1,12 @@
 from pathlib import Path
 
+import numpy as np
+from ycecream import y as ic
+
+TEST_INPUT = "test_input"
+TEST_1_SOLUTION = 0
+TEST_2_SOLUTION = 0
+
 
 def solve1(data):
     return 0
@@ -11,11 +18,7 @@ def solve2(data):
 
 def parsetext(text):
     lines = text.splitlines()
-    return lines
-
-
-def testdata():
-    return ""
+    return ic(lines)
 
 
 def mydata():
@@ -23,18 +26,25 @@ def mydata():
 
 
 def part1():
-    test_solution = 0
-    result = solve1(parsetext(testdata()))
-    assert result == test_solution
+    # turn on debug print statements
+    ic.enabled = True
+    result = solve1(parsetext(TEST_INPUT))
+    assert result == TEST_1_SOLUTION
 
+    # turn off debug print statements
+    ic.enabled = False
     return solve1(parsetext(mydata()))
 
 
 def part2():
-    test_solution = 0
-    result = solve2(parsetext(testdata()))
-    assert result == test_solution
 
+    # turn on debug print statements
+    ic.enabled = True
+    result = solve2(parsetext(TEST_INPUT))
+    assert result == TEST_2_SOLUTION
+
+    # turn off debug print statements
+    ic.enabled = False
     return solve2(parsetext(mydata()))
 
 
