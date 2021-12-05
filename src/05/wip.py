@@ -1,34 +1,30 @@
-from collections import defaultdict
+import re
+from collections import defaultdict, namedtuple
 from pathlib import Path
 
 import numpy as np
 from ycecream import y
 
+Point = namedtuple("Point", "x,y")
+
 
 def generate_points(start, end):
-    x1, y1 = start
-    x2, y2 = end
+    xstep = np.sign(end.x - start.x)
+    ystep = np.sign(end.y - start.y)
 
-    xstep = np.sign(x2 - x1)
-    ystep = np.sign(y2 - y1)
-
-    ix, iy = start
-    while (ix != x2) or (iy != y2):
-        yield (ix, iy)
-        ix += xstep
-        iy += ystep
-
-    yield (ix, iy)
+    nextpoint = start
+    while True:
+        yield nextpoint
+        if nextpoint == end:
+            return
+        nextpoint = Point(nextpoint.x + xstep, nextpoint.y + ystep)
 
 
 def solve1(startpts, endpts, part2flag=False):
     result = defaultdict(int)
 
     for start, end in zip(startpts, endpts):
-        startx, starty = start
-        endx, endy = end
-
-        if (startx != endx) and (starty != endy):
+        if (start.x != end.x) and (start.y != end.y):
             if part2flag:
                 for point in generate_points(start, end):
                     result[point] += 1
@@ -44,18 +40,16 @@ def solve2(startpts, endpts):
     return solve1(startpts, endpts, True)
 
 
-def decode_tuple(coord):
-    return np.array(coord.split(","), dtype=int)
-
-
 def parsetext(text):
+    numre = re.compile(r"(\d+)")
     lines = text.splitlines()
     startpts = []
     endpts = []
     for line in lines:
-        points = line.split(" -> ")
-        startpts.append(decode_tuple(points[0]))
-        endpts.append(decode_tuple(points[1]))
+        x1, y1, x2, y2 = [int(i) for i in numre.findall(line)]
+
+        startpts.append(Point(x1, y1))
+        endpts.append(Point(x2, y2))
     return startpts, endpts
 
 

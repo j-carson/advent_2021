@@ -13,40 +13,33 @@ class Winner(Exception):
 
 class Bingo:
     def __init__(self, text):
-        board = []
-        lines = text.splitlines()
-        for line in lines:
-            board.append([int(n) for n in line.split()])
-
-        self.status = np.zeros((5, 5)).astype(int)
-        self.numbers = np.array(board)
+        self.numbers = np.array([line.split() for line in text.splitlines()], dtype=int)
+        self.status = np.zeros(self.numbers.shape, dtype=int)
         self.winner = False
 
     def play(self, number):
         # same board never raises twice
         if self.winner:
             return
+
+        # update status and check for winning
         self.status[self.numbers == number] = 1
-        rowsums = [sum(row) for row in self.status]
-        colsums = [sum(row) for row in self.status.T]
-        if 5 in rowsums or 5 in colsums:
-            self.numbers[self.status == 1] = 0
-            unmarked = np.sum(self.numbers.flatten())
+        if self.status.all(axis=0).any() or self.status.all(axis=1).any():
+            unmarked = np.sum(self.numbers[self.status == 0])
             score = unmarked * number
             self.winner = True
             raise Winner(score)
 
 
 def solve1(numbers, boards):
-    for number in numbers:
-        for board in boards:
-            try:
-                board.play(number)
-            except Winner as w:
-                return w.score
+    return solve(numbers, boards, True)
 
 
 def solve2(numbers, boards):
+    return solve(numbers, boards, False)
+
+
+def solve(numbers, boards, return_first=True):
     board_left = len(boards)
     for number in numbers:
         for board in boards:
@@ -54,13 +47,13 @@ def solve2(numbers, boards):
                 board.play(number)
             except Winner as w:
                 board_left -= 1
-                if board_left == 0:
+                if (return_first) or (board_left == 0):
                     return w.score
 
 
 def parsetext(text):
     chunks = text.split("\n\n")
-    numbers = [int(n) for n in chunks[0].split(",")]
+    numbers = np.array(chunks[0].split(","), dtype=int)
     boards = []
 
     for chunk in chunks[1:]:
