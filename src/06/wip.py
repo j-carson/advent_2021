@@ -18,7 +18,8 @@ class Clock:
         self.day += 1
         for item in self.items:
             item.tick()
-        self.items.extend(self.newitems)
+
+        self.items = self.newitems
         self.newitems = []
 
     def add_item(self, item):
@@ -48,8 +49,10 @@ class LanternFish:
     def tick(self):
         self.counter -= 1
         if self.counter < 0:
-            self.counter = 6
+            self.clock.add_item(LanternFish(6, self.clock, self.score))
             self.clock.add_item(LanternFish(8, self.clock, self.score))
+        else:
+            self.clock.add_item(LanternFish(self.counter, self.clock, self.score))
 
 
 def solve1(data, generations=80):

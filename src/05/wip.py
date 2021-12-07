@@ -24,11 +24,13 @@ def solve1(startpts, endpts, part2flag=False):
     result = defaultdict(int)
 
     for start, end in zip(startpts, endpts):
-        if (start.x != end.x) and (start.y != end.y):
-            if part2flag:
-                for point in generate_points(start, end):
-                    result[point] += 1
-        else:
+        if any(
+            (
+                part2flag,
+                start.x == end.x,
+                start.y == end.y,
+            )
+        ):
             for point in generate_points(start, end):
                 result[point] += 1
 
