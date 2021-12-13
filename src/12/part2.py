@@ -49,20 +49,16 @@ TEST_2C_SOLUTION = 3509
 
 class Graph:
     def __init__(self, data):
-        tokens = []
-        for line in data:
-            tokens.extend(line)
-        tokens = np.unique(tokens)
-        df = pd.DataFrame(index=tokens, columns=tokens, dtype=bool, data=False)
+        self.connects_to = defaultdict(set)
         for line in data:
             ptA, ptB = line
-            df.loc[ptA, ptB] = df.loc[ptB, ptA] = True
+            # The "next point from here" should never be "back to start"
+            # The "next point from here" should be nowhere if we are at the end
+            if ptA != "start" and ptB != "end":
+                self.connects_to[ptB].add(ptA)
+            if ptB != "start" and ptA != "end":
+                self.connects_to[ptA].add(ptB)
 
-        self.connects_to = defaultdict(list)
-        for token in tokens:
-            for next_dest in tokens:
-                if df.loc[token, next_dest]:
-                    self.connects_to[token].append(next_dest)
         ic(self.connects_to)
 
     def take_step(self, path):
@@ -71,19 +67,14 @@ class Graph:
         possible_steps = self.connects_to[path[-1]]
 
         for step in possible_steps:
-            if step == "start":
-                continue
+            if step.islower():
+                count_small_visits = Counter([p for p in path if p.islower()])
+                used_revisit = 2 in count_small_visits.values()
 
-            if step.lower() == step:
-                visits = path.count(step)
-
-                if visits == 1:
-                    # check for existing double-visit
-                    counts = Counter(path)
-                    values = [v for k, v in counts.items() if k.lower() == k]
-                    if 2 in values:
-                        continue
-                elif visits == 2:
+                if (count_small_visits[step] == 1 and used_revisit) or (
+                    count_small_visits[step] == 2
+                ):
+                    # skip this one - breaks the rules
                     continue
 
             yield path + [step]
@@ -91,7 +82,7 @@ class Graph:
     def make_paths(self, path):
         for option in self.take_step(path):
             if option[-1] == "end":
-                yield option.copy()
+                yield option
             else:
                 yield from self.make_paths(option)
 
@@ -102,7 +93,6 @@ class Graph:
         for i, new_path in enumerate(self.make_paths(path)):
             if i < 50:
                 ic(i, new_path)
-
         return i + 1
 
 
@@ -126,7 +116,7 @@ def mydata():
 def part2():
 
     # turn on debug print statements
-    ic.enabled = True
+    ic.enabled = False
     result = solve2(parsetext(TEST_INPUT_1A))
     assert result == TEST_2A_SOLUTION
 
