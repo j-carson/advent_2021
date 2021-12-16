@@ -31,23 +31,31 @@ class Packet:
     literal: int = None
     sub_packets: list = None
 
-    def evaluate(self):
+    @property
+    def version_sum(self):
+        total_score = self.version
+        if self.sub_packets:
+            total_score += sum([sub.version_sum for sub in self.sub_packets])
+        return total_score
+
+    @property
+    def value(self):
         if self.ptype == 0:
-            return sum([sub.evaluate() for sub in self.sub_packets])
+            return sum([sub.value for sub in self.sub_packets])
         elif self.ptype == 1:
-            return np.prod([sub.evaluate() for sub in self.sub_packets])
+            return np.prod([sub.value for sub in self.sub_packets])
         elif self.ptype == 2:
-            return min([sub.evaluate() for sub in self.sub_packets])
+            return min([sub.value for sub in self.sub_packets])
         elif self.ptype == 3:
-            return max([sub.evaluate() for sub in self.sub_packets])
+            return max([sub.value for sub in self.sub_packets])
         elif self.ptype == 4:
             return self.literal
         elif self.ptype == 5:
-            return int(self.sub_packets[0].evaluate() > self.sub_packets[1].evaluate())
+            return int(self.sub_packets[0].value > self.sub_packets[1].value)
         elif self.ptype == 6:
-            return int(self.sub_packets[0].evaluate() < self.sub_packets[1].evaluate())
+            return int(self.sub_packets[0].value < self.sub_packets[1].value)
         elif self.ptype == 7:
-            return int(self.sub_packets[0].evaluate() == self.sub_packets[1].evaluate())
+            return int(self.sub_packets[0].value == self.sub_packets[1].value)
 
 
 class Parser:
@@ -62,33 +70,35 @@ class Parser:
         else:
             return None
 
-    def bits2num(self, nbits):
+    def read_int(self, nbits):
         return int(self.read(nbits), 2)
 
     def version_id(self):
-        return self.bits2num(3)
+        return self.read_int(3)
 
     def packet_type(self):
-        return self.bits2num(3)
+        return self.read_int(3)
 
-    def standard_header(self):
-        return self.version_id(), self.packet_type()
+    def start_packet(self):
+        version = self.version_id()
+        ptype = self.packet_type()
+        return Packet(version=version, ptype=ptype)
 
     def literal_payload(self):
         ic("literal")
         result = ""
         keep_going = 1
         while keep_going:
-            keep_going = self.bits2num(1)
+            keep_going = self.read_int(1)
             result += self.read(4)
         return int(result, 2)
 
     def operator_payload(self):
         ic("operator")
-        length_type_id = self.bits2num(1)
+        length_type_id = self.read_int(1)
         if length_type_id == 0:
             ic("length-flavor")
-            sub_packets_length = self.bits2num(15)
+            sub_packets_length = self.read_int(15)
             buffer = self.read(sub_packets_length)
             sub_parser = Parser(buffer)
             sub_packets = []
@@ -96,39 +106,27 @@ class Parser:
                 sub_packets.append(sub_parser.read_packet())
         else:
             ic("num flavor")
-            num_sub_packets = self.bits2num(11)
+            num_sub_packets = self.read_int(11)
             sub_packets = [self.read_packet() for _ in range(num_sub_packets)]
         return sub_packets
 
     def read_packet(self):
-        version, packet_type = self.standard_header()
-        packet = Packet(version=version, ptype=packet_type)
-        ic(version, packet_type)
-
-        if packet_type == 4:
+        packet = self.start_packet()
+        if packet.ptype == 4:
             packet.literal = self.literal_payload()
-            return packet
         else:
             packet.sub_packets = self.operator_payload()
-            return packet
-
-
-def version_sum(packet):
-    total_score = packet.version
-    if packet.sub_packets:
-        for sub in packet.sub_packets:
-            total_score += version_sum(sub)
-    return total_score
+        return packet
 
 
 def solve1(data):
     packet = Parser(data).read_packet()
-    return version_sum(packet)
+    return packet.version_sum
 
 
 def solve2(data):
     packet = Parser(data).read_packet()
-    return packet.evaluate()
+    return packet.value
 
 
 def parsetext(text):
@@ -141,14 +139,15 @@ def mydata():
 
 
 def part1():
-    TEST_1 = "8A004A801A8002F478", 16
-    TEST_2 = "620080001611562C8802118E34", 12
-    TEST_3 = "C0015000016115A2E0802F182340", 23
-    TEST_4 = "A0016C880162017C3686B18A3D4780", 31
+    tests = [
+        ("8A004A801A8002F478", 16),
+        ("620080001611562C8802118E34", 12),
+        ("C0015000016115A2E0802F182340", 23),
+        ("A0016C880162017C3686B18A3D4780", 31),
+    ]
 
     ic.enabled = False
-    for test in [TEST_1, TEST_2, TEST_3, TEST_4]:
-        text, expected = test
+    for text, expected in tests:
         data = parsetext(text)
         result = solve1(data)
         assert result == expected
@@ -172,9 +171,8 @@ def part2():
         ("9C0141080250320F1802104A08", 1),
     ]
 
-    ic.enabled = True
-    for test in tests:
-        text, expected = test
+    ic.enabled = False
+    for text, expected in tests:
         data = parsetext(text)
         result = solve2(data)
         assert result == expected
