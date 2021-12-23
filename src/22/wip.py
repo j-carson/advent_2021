@@ -20,9 +20,6 @@ class ValueRange(NamedTuple):
     low: int
     high: int
 
-    def contains(self, value):
-        return self.low <= value <= self.high
-
 
 class Cube(NamedTuple):
     state: str
@@ -59,29 +56,43 @@ class OverlappingCubes:
         self.z_changepts = np.unique(self.z_changepts)
 
     def count_on(self):
-        total = 0
-        for x, x_next in zip(self.x_changepts, self.x_changepts[1:]):
-            x_width = x_next - x
-            x_cubes = [c for c in self.cubes if c.x_range.contains(x)]
 
-            for y, y_next in zip(self.y_changepts, self.y_changepts[1:]):
-                y_width = y_next - y
-                xy_cubes = [c for c in x_cubes if c.y_range.contains(y)]
+        cube_cache = {}
+        for cube in self.cubes:
 
-                for z, z_next in zip(self.z_changepts, self.z_changepts[1:]):
-                    z_width = z_next - z
+            cube_xs = self.x_changepts[
+                (cube.x_range[0] <= self.x_changepts)
+                & (self.x_changepts <= cube.x_range[1] + 1)
+            ]
+            cube_ys = self.y_changepts[
+                (cube.y_range[0] <= self.y_changepts)
+                & (self.y_changepts <= cube.y_range[1] + 1)
+            ]
+            cube_zs = self.z_changepts[
+                (cube.z_range[0] <= self.z_changepts)
+                & (self.z_changepts <= cube.z_range[1] + 1)
+            ]
 
-                    subcubes = [c for c in xy_cubes if c.z_range.contains(z)]
-                    if subcubes and (subcubes[-1].state == "on"):
-                        total += x_width * y_width * z_width
+            for x, x_next in zip(cube_xs, cube_xs[1:]):
+                x_width = x_next - x
 
-        return total
+                for y, y_next in zip(cube_ys, cube_ys[1:]):
+                    y_width = y_next - y
+
+                    for z, z_next in zip(cube_zs, cube_zs[1:]):
+                        z_width = z_next - z
+
+                        if cube.state == "on":
+                            cube_cache[(x, y, z)] = x_width * y_width * z_width
+                        else:
+                            cube_cache[(x, y, z)] = 0
+
+        return sum(cube_cache.values())
 
 
 def solve(reboot_steps, small_case=False):
 
     cubes = []
-
     for step in reboot_steps:
         if (not small_case) or all(
             (
